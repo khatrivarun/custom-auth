@@ -1,0 +1,42 @@
+version: '3.7'
+
+services:
+  server:
+    build:
+      context: server
+      dockerfile: Dockerfile
+    container_name: server
+    env_file:
+      - server.env
+    ports:
+      - '5000:5000'
+    volumes:
+      - ./server:/server
+      - /server/node_modules
+    networks:
+      - full_stack_net
+    depends_on:
+      - postgres_db
+
+  postgres_db:
+    image: postgres
+    container_name: postgres_db
+    restart: always
+    ports:
+      - '5432:5432'
+      - '127.0.0.1:8888:5432'
+    env_file:
+      - postgres.env
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+    networks:
+      - full_stack_net
+
+networks:
+  full_stack_net:
+    name: full_stack_net
+
+volumes:
+  postgres_db:
+    driver: local
+
