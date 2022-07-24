@@ -1,6 +1,22 @@
 version: '3.7'
 
 services:
+  client:
+    build:
+      context: client
+      dockerfile: Dockerfile
+    container_name: client
+    stdin_open: true
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./client:/client/app
+      - /client/node_modules
+    networks:
+      - full_stack_net
+    depends_on:
+      - server
+
   server:
     build:
       context: server
