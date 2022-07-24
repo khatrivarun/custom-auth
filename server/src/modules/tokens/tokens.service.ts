@@ -108,6 +108,7 @@ export class TokensService {
     encoded: string,
   ): Promise<{ user: User; token: RefreshToken }> {
     const payload = await this.decodeRefreshToken(encoded);
+
     const token = await this.getStoredTokenFromRefreshTokenPayload(payload);
 
     if (!token) {

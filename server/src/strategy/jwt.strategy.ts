@@ -1,8 +1,9 @@
 import { UserService } from './../modules/user/user.service';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { User } from 'src/models/user.model';
+import { Request } from 'express';
 
 export interface AccessTokenPayload {
   sub: number;
@@ -11,12 +12,20 @@ export interface AccessTokenPayload {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   public constructor(private readonly userService: UserService) {
+    const fromCookies = (request: Request): string => {
+      if (request && request.cookies) {
+        console.log(request.cookies);
+
+        return request.cookies.accessToken;
+      }
+      return null;
+    };
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: fromCookies,
       ignoreExpiration: false,
       secretOrKey: '<SECRET KEY>',
       signOptions: {
-        expiresIn: '5m',
+        expiresIn: '30s',
       },
     });
   }
@@ -27,7 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.userService.findForId(id);
 
     if (!user) {
-      return null;
+      throw new UnauthorizedException('Unauthorized');
     }
 
     return user;

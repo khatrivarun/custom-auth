@@ -8,7 +8,7 @@ import { TokensService } from './tokens.service';
     JwtModule.register({
       secret: '<SECRET KEY>',
       signOptions: {
-        expiresIn: '5m',
+        expiresIn: '30s',
       },
     }),
   ],

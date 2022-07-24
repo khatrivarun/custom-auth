@@ -1,10 +1,10 @@
-import { RefreshTokenDto } from './../../dtos/auth/refresh-token.dto';
 import {
   Body,
   Controller,
   Get,
   Post,
   Req,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +14,7 @@ import { User } from 'src/models/user.model';
 import { TokensService } from '../tokens/tokens.service';
 import { UserService } from '../user/user.service';
 import { JWTGuard } from 'src/guards/auth.guard';
+import { Request, Response } from 'express';
 
 export interface AuthenticationPayload {
   user: User;
@@ -46,6 +47,13 @@ export class AuthController {
     };
   }
 
+  private getOneMonthLater(): Date {
+    const today = new Date(Date.now());
+    today.setMonth(today.getMonth() + 1);
+
+    return today;
+  }
+
   @Post('/register')
   public async register(@Body() registerAccountDto: RegisterAccountDto) {
     const user = await this.userService.createUserFromRequest(
@@ -67,7 +75,10 @@ export class AuthController {
   }
 
   @Post('/login')
-  public async login(@Body() loginAccountDto: LoginAccountDto) {
+  public async login(
+    @Body() loginAccountDto: LoginAccountDto,
+    @Res() response: Response,
+  ) {
     const { username, password } = loginAccountDto;
 
     const user = await this.userService.findForUsername(username);
@@ -82,30 +93,67 @@ export class AuthController {
     const token = await this.tokenService.generateAccessToken(user);
     const refresh = await this.tokenService.generateRefreshToken(
       user,
-      60 * 60 * 24 * 30,
+      this.getOneMonthLater().getTime(),
     );
 
     const payload = this.buildResponsePayload(user, token, refresh);
 
-    return {
+    response.cookie('accessToken', token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: true,
+      expires: new Date(Date.now() + 60 * 30),
+    });
+
+    response.cookie('refreshToken', refresh, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: true,
+      expires: this.getOneMonthLater(),
+    });
+
+    return response.send({
       status: 'success',
       data: payload,
-    };
+    });
   }
 
   @Post('/refresh')
-  public async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
+  public async refresh(@Req() request: Request, @Res() response: Response) {
+    console.log(request.cookies.refreshToken);
+
     const { user, token } =
       await this.tokenService.createAccessTokenFromRefreshToken(
-        refreshTokenDto.refresh_token,
+        request.cookies.refreshToken,
       );
 
     const payload = this.buildResponsePayload(user, token);
 
-    return {
+    response.cookie('accessToken', payload.payload.token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: true,
+      expires: new Date(Date.now() + 60 * 30),
+    });
+
+    return response.send({
       status: 'success',
       data: payload,
-    };
+    });
+  }
+
+  @Post('/lol')
+  public async lol(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.cookie('key', 'value', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: true,
+      expires: new Date(Date.now() + 60 * 60 * 24),
+    });
+    return response.send();
   }
 
   @Get('/me')
