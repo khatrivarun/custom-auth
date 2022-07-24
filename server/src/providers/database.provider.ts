@@ -1,6 +1,7 @@
 import { Logger, Provider } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import { SequelizeORM } from 'src/constants/database.constant';
+import { RefreshToken } from 'src/models/refresh-token.model';
 import { User } from 'src/models/user.model';
 
 export const databaseProviders: Provider<any>[] = [
@@ -20,7 +21,7 @@ export const databaseProviders: Provider<any>[] = [
         logging: (...message) => logger.debug(message),
       });
 
-      sequelize.addModels([User]);
+      sequelize.addModels([User, RefreshToken]);
       await sequelize.sync();
 
       logger.log('Successfully connected to the database');
