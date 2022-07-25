@@ -1,3 +1,4 @@
+import { RefreshTokenDto } from './../../dtos/auth/refresh-token.dto';
 import {
   Body,
   Controller,
@@ -119,12 +120,14 @@ export class AuthController {
   }
 
   @Post('/refresh')
-  public async refresh(@Req() request: Request, @Res() response: Response) {
-    console.log(request.cookies.refreshToken);
-
+  public async refresh(
+    @Req() request: Request,
+    @Res() response: Response,
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ) {
     const { user, token } =
       await this.tokenService.createAccessTokenFromRefreshToken(
-        request.cookies.refreshToken,
+        request.cookies.refreshToken ?? refreshTokenDto.refresh_token ?? null,
       );
 
     const payload = this.buildResponsePayload(user, token);

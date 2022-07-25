@@ -1,6 +1,7 @@
+import { Optional } from '@nestjs/common';
 import { IsNotEmpty } from 'class-validator';
 
 export class RefreshTokenDto {
-  @IsNotEmpty({ message: 'The refresh token is required' })
+  @Optional()
   readonly refresh_token: string;
 }

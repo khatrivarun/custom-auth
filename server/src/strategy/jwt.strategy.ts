@@ -12,16 +12,19 @@ export interface AccessTokenPayload {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   public constructor(private readonly userService: UserService) {
-    const fromCookies = (request: Request): string => {
-      if (request && request.cookies) {
-        console.log(request.cookies);
-
+    const fromCookiesOrHeader = (request: Request): string => {
+      if (request && request.cookies && request.cookies.accessToken) {
         return request.cookies.accessToken;
-      }
-      return null;
+      } else if (
+        request &&
+        request.headers &&
+        request.headers['authorization']
+      ) {
+        return request.headers['authorization'].substring('Bearer '.length);
+      } else return null;
     };
     super({
-      jwtFromRequest: fromCookies,
+      jwtFromRequest: fromCookiesOrHeader,
       ignoreExpiration: false,
       secretOrKey: '<SECRET KEY>',
       signOptions: {
