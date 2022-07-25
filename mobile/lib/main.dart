@@ -1,6 +1,44 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
-void main() {
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mobile/constants/hive.constant.dart';
+import 'package:mobile/constants/logger.constant.dart';
+import 'package:mobile/models/token/token.model.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+
+  log.i("Attempting to open secure box");
+
+  const secureStorage = FlutterSecureStorage();
+  final String? encryptionKeyCheck = await secureStorage.read(key: hiveKey);
+
+  if (encryptionKeyCheck == null) {
+    final newKey = Hive.generateSecureKey();
+    await secureStorage.write(
+      key: hiveKey,
+      value: base64UrlEncode(newKey),
+    );
+  }
+
+  final key = await secureStorage.read(key: hiveKey);
+  final encryptionKey = base64Url.decode(key!);
+
+  log.i("Encryption Key: $encryptionKey");
+
+  Hive.registerAdapter<Token>(TokenAdapter());
+  await Hive.openBox<Token>(
+    tokenBox,
+    encryptionCipher: HiveAesCipher(
+      encryptionKey,
+    ),
+  );
+
+  log.i("Secure Box Opened");
+
   runApp(const MyApp());
 }
 
